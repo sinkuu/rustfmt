@@ -50,4 +50,35 @@ fn issue_1086() {
 /*
  * random comment */
 
+mod issue1113 {
+pub fn foo() -> fmt::Result
+// comment
+{
+    panic!()
+}
+
+pub fn foo() -> fmt::Result // comment
+{
+    panic!()
+}
+
+pub fn foo() -> fmt::Result // comment */
+{
+    panic!()
+}
+
+pub fn foo() -> fmt::Result /* comment */
+{
+    panic!()
+}
+
+pub fn foo() -> fmt::Result
+/* comment
+multiline */
+{
+    panic!()
+}
+}
+
 fn main() {/* Test */}
+

@@ -217,6 +217,8 @@ impl<'a> FmtVisitor<'a> {
         if newline_brace {
             result.push('\n');
             result.push_str(&indent.to_string(self.config));
+        } else if result.ends_with('\n') {
+            result.push_str(&indent.to_string(self.config));
         } else {
             result.push(' ');
         }
@@ -1480,10 +1482,40 @@ fn rewrite_fn_base(context: &RewriteContext,
         if where_clause.predicates.is_empty() {
             let snippet_hi = span.hi;
             let snippet = context.snippet(mk_sp(snippet_lo, snippet_hi));
+            let next_line = snippet.trim_left_matches(&[' ', '\t'][..])
+                .starts_with('\n');
             let snippet = snippet.trim();
             if !snippet.is_empty() {
-                result.push(' ');
-                result.push_str(snippet);
+                use comment::{rewrite_comment, CommentCodeSlices, CodeCharKind};
+                if snippet.contains('\n') {
+                    result.push('\n');
+                    result.push_str(&context.block_indent.to_string(context.config));
+                    let comment = try_opt!(rewrite_comment(snippet,
+                                                           false,
+                                                           context.config.max_width,
+                                                           context.block_indent,
+                                                           context.config));
+                    result.push_str(&comment);
+                    result.push('\n');
+                } else {
+                    if next_line {
+                        result.push('\n');
+                        result.push_str(&context.block_indent.to_string(context.config));
+                    } else {
+                        result.push(' ');
+                    }
+                    result.push_str(snippet);
+
+                    // break if the last comment is line comment
+                    if CommentCodeSlices::new(snippet)
+                        .last()
+                        .map(|(kind, _, slice)| {
+                            kind != CodeCharKind::Comment || slice.starts_with("//")
+                        })
+                        .unwrap_or(false) {
+                        result.push('\n');
+                    }
+                }
             }
         } else {
             // FIXME it would be nice to catch comments between the return type
