@@ -1477,11 +1477,11 @@ fn rewrite_fn_base(context: &RewriteContext,
             result.push_str(&ret_str);
         }
 
-        // Comment between return type and the end of the decl.
-        let snippet_lo = fd.output.span().hi;
-        if where_clause.predicates.is_empty() {
-            let snippet_hi = span.hi;
-            let snippet = context.snippet(mk_sp(snippet_lo, snippet_hi));
+        fn format_comment_span(result: &mut String,
+                               snippet: &str,
+                               context: &RewriteContext,
+                               newline: bool)
+                               -> Option<()> {
             let next_line = snippet.trim_left_matches(&[' ', '\t'][..])
                 .starts_with('\n');
             let snippet = snippet.trim();
@@ -1496,7 +1496,9 @@ fn rewrite_fn_base(context: &RewriteContext,
                                                            context.block_indent,
                                                            context.config));
                     result.push_str(&comment);
-                    result.push('\n');
+                    if newline {
+                        result.push('\n');
+                    }
                 } else {
                     if next_line {
                         result.push('\n');
@@ -1507,7 +1509,8 @@ fn rewrite_fn_base(context: &RewriteContext,
                     result.push_str(snippet);
 
                     // break if the last comment is line comment
-                    if CommentCodeSlices::new(snippet)
+                    if newline &&
+                       CommentCodeSlices::new(snippet)
                         .last()
                         .map(|(kind, _, slice)| {
                             kind != CodeCharKind::Comment || slice.starts_with("//")
@@ -1517,10 +1520,21 @@ fn rewrite_fn_base(context: &RewriteContext,
                     }
                 }
             }
+
+            Some(())
+        }
+
+        // Comment between return type and the end of the decl.
+        let snippet_lo = fd.output.span().hi;
+        if where_clause.predicates.is_empty() {
+            let snippet_hi = span.hi;
+            let snippet = context.snippet(mk_sp(snippet_lo, snippet_hi));
+            try_opt!(format_comment_span(&mut result, &snippet, context, true));
         } else {
-            // FIXME it would be nice to catch comments between the return type
-            // and the where clause, but we don't have a span for the where
-            // clause.
+            let snippet = context.snippet(mk_sp(snippet_lo, span.hi));
+            let where_pos = try_opt!(snippet.find_uncommented("where"));
+            let snippet = &snippet[..where_pos];
+            try_opt!(format_comment_span(&mut result, &snippet, &context.nested_context(), false));
         }
     }
 

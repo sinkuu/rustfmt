@@ -50,7 +50,7 @@ fn issue_1086() {
 /*
  * random comment */
 
-mod issue1113 {
+mod fn_comment {
 pub fn foo() -> fmt::Result
 // comment
 {
@@ -75,6 +75,18 @@ pub fn foo() -> fmt::Result /* comment */
 pub fn foo() -> fmt::Result
 /* comment
 multiline */
+{
+    panic!()
+}
+
+pub fn foo() -> fmt::Result /* comment
+multiline*/ where T: Debug
+{
+    panic!()
+}
+
+pub fn foo() -> fmt::Result // comment
+where T: Debug
 {
     panic!()
 }
